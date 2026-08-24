@@ -14,16 +14,16 @@ app.use(express.json());
 const db = mysql.createPool({
     host: 'carles-handicraft-db-carlesmis.d.aivencloud.com',
     user: 'avnadmin',
-    password: 'AVNS_I5p64fuZi6dx3nTUv9G',  // ← Must have your real password
+    password: 'AVNS_I5p64fuZi6dx3nTUv9G',  // ← Your password here
     database: 'defaultdb',
     port: 10346,
     waitForConnections: true,
     connectionLimit: 10,
     ssl: {
-        rejectUnauthorized: true
+        rejectUnauthorized: false  // ← CHANGE THIS TO false
     }
 });
-
+"Fix SSL certificate error"
 const promiseDb = db.promise();
 
 // ============ AUTH MIDDLEWARE ============
