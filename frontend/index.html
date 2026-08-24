@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Carles Handicraft Suggestion System | #CarlesdaBest</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Roboto, system-ui, sans-serif; background: #e9ecef; }
+    
+    .hero-banner {
+      width: 100%;
+      background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.55)), url('img/gigantes-bg.jpg');
+      background-size: cover;
+      background-position: center 30%;
+      background-repeat: no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: white;
+      height: 500px;
+    }
+    
+    .hero-content { max-width: 800px; padding: 2rem; width: 100%; }
+    .hero-badge {
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      display: inline-block;
+      padding: 0.5rem 1.2rem;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+    }
+    
+    .hero-content h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 1rem; text-shadow: 2px 2px 8px rgba(0,0,0,0.3); }
+    .hero-content p { font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.95; }
+    
+    .hero-search {
+      display: flex;
+      background: white;
+      border-radius: 60px;
+      overflow: hidden;
+      max-width: 550px;
+      margin: 0 auto;
+    }
+    .hero-search input { flex: 1; padding: 1rem 1.5rem; border: none; font-size: 1rem; outline: none; }
+    .hero-search button { background: #2d5016; border: none; padding: 0 2rem; color: white; font-weight: 600; cursor: pointer; font-size: 1rem; }
+    .hero-search button:hover { background: #1e3a0c; }
+    
+    @media (max-width: 768px) {
+      .hero-banner { height: 400px; }
+      .hero-content h1 { font-size: 2rem; }
+      .hero-content p { font-size: 0.9rem; }
+      .hero-search { flex-direction: column; border-radius: 30px; }
+      .hero-search input { padding: 0.8rem 1.2rem; }
+      .hero-search button { padding: 0.8rem; }
+    }
+    
+    .app-wrapper { display: flex; min-height: 100vh; }
+    
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #2d5016 0%, #1e3a0c 100%);
+      color: white;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      z-index: 200;
+    }
+    
+    .sidebar-header { padding: 1.8rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 1rem; }
+    .sidebar-header h1 { font-size: 1.4rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
+    .sidebar-header .subtitle { font-size: 0.7rem; opacity: 0.8; line-height: 1.4; }
+    .sidebar-header .location-badge { background: rgba(255,255,255,0.2); display: inline-block; padding: 0.2rem 0.6rem; border-radius: 40px; font-size: 0.6rem; margin-top: 0.8rem; }
+    
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; padding: 0 1rem; }
+    .nav-tab {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 1rem 1.2rem;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 16px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-tab i { width: 24px; font-size: 1.2rem; }
+    .nav-tab:hover { background: rgba(255,255,255,0.2); }
+    .nav-tab.active { background: white; color: #2d5016; }
+    
+    .main-content { flex: 1; background: #f5f7f0; min-height: 100vh; overflow-x: hidden; }
+    .content-section { display: none; padding: 1.8rem; }
+    .content-section.active { display: block; }
+    
+    .menu-toggle {
+      display: none;
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      background: #2d5016;
+      color: white;
+      border: none;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 1.4rem;
+      cursor: pointer;
+      z-index: 1001;
+    }
+    
+    @media (max-width: 768px) {
+      .menu-toggle { display: flex; align-items: center; justify-content: center; }
+      .sidebar { position: fixed; left: -280px; transition: left 0.3s ease; z-index: 999; height: 100%; top: 0; }
+      .sidebar.open { left: 0; }
+      .main-content { width: 100%; }
+      .content-section { padding: 1.2rem; }
+      .craft-item { flex-direction: column; }
+      .craft-image { width: 100%; height: 170px; }
+      .material-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    }
+    
+    .material-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.2rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .material-card {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid #ddd;
+    }
+    
+    .material-card.selected { border-color: #2d5016; }
+    
+    .material-image { width: 100%; height: 140px; object-fit: cover; background: #e9f5db; }
+    .material-info { padding: 0.9rem; text-align: center; }
+    .material-name { font-weight: 800; color: #2d5016; font-size: 1rem; }
+    .material-origin { font-size: 0.7rem; color: #006994; margin-top: 4px; }
+    
+    .craft-list { display: flex; flex-direction: column; gap: 1.25rem; }
+    
+    .craft-item {
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      cursor: pointer;
+      border: 1px solid #eef2e6;
+    }
+    
+    .craft-image { width: 130px; height: 130px; object-fit: cover; background: #e9f5db; flex-shrink: 0; }
+    .craft-details { padding: 1rem 1.2rem; flex: 1; }
+    .craft-title { font-size: 1.2rem; color: #2d5016; font-weight: 800; }
+    .cultural-tag { background: #c17a5e; color: white; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; display: inline-block; margin-top: 5px; }
+    
+    /* MAP STYLES */
+    #map { 
+      height: 500px; 
+      border-radius: 16px; 
+      margin-bottom: 1.5rem; 
+      border: 1px solid #ddd;
+      z-index: 1;
+    }
+    
+    .map-controls { 
+      display: flex; 
+      gap: 0.5rem; 
+      margin-bottom: 1rem; 
+      flex-wrap: wrap; 
+      align-items: center;
+    }
+    
+    .map-btn { 
+      background: #2d5016; 
+      color: white; 
+      border: none; 
+      padding: 0.5rem 1rem; 
+      border-radius: 30px; 
+      font-size: 0.8rem; 
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .map-btn:hover { background: #1e3a0c; }
+    
+    .map-layer-btn {
+      background: #006994;
+    }
+    .map-layer-btn:hover { background: #004d66; }
+    
+    .location-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 1rem;
+    }
+    
+    .location-item {
+      background: white;
+      padding: 1rem;
+      border-radius: 12px;
+      border-left: 4px solid #2d5016;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .location-item:hover {
+      background: #e9f5db;
+      transform: translateX(5px);
+    }
+    
+    .location-item.active {
+      background: #d4e8c4;
+      border-left-width: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .location-name {
+      font-weight: 800;
+      color: #2d5016;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+    }
+    
+    .location-address {
+      font-size: 0.75rem;
+      color: #5a6e5a;
+      margin-top: 5px;
+    }
+    
+    .location-material {
+      display: inline-block;
+      background: #e9ecef;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      margin-top: 5px;
+      color: #2d5016;
+    }
+    .custom-marker-icon {
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+    .custom-marker div:hover {
+      transform: scale(1.1);
+      transition: transform 0.2s;
+    }
+    
+    .leaflet-popup {
+      transition: all 0.2s;
+    }
+    
+    .leaflet-popup-content-wrapper {
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .leaflet-control-zoom { 
+      border: none !important; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25) !important;
+      border-radius: 8px !important;
+      overflow: hidden;
+    }
+    .leaflet-control-zoom a { 
+      background-color: white !important; 
+      color: #2d5016 !important; 
+      width: 44px !important; 
+      height: 44px !important; 
+      line-height: 44px !important;
+      font-size: 22px !important;
+      font-weight: bold !important;
+    }
+    .leaflet-control-zoom a:hover { 
+      background-color: #2d5016 !important; 
+      color: white !important; 
+    }
+    .leaflet-control-zoom-in {
+      border-bottom: 1px solid #ddd !important;
+    }
+    
+    .suggestion-box { background: linear-gradient(135deg, #e9f5db 0%, #d4e8c4 100%); border-radius: 16px; padding: 1.2rem; margin-top: 1.5rem; border-left: 5px solid #006994; }
+    .suggestion-box h3 { color: #2d5016; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 8px; }
+    .suggestion-items { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .suggestion-chip { background: white; padding: 0.5rem 1.2rem; border-radius: 40px; font-size: 0.85rem; font-weight: 600; color: #2d5016; cursor: pointer; }
+    .suggestion-chip:hover { background: #2d5016; color: white; }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      z-index: 2000;
+      overflow-y: auto;
+    }
+    
+    .modal-content {
+      background: white;
+      margin: 1rem auto;
+      max-width: 800px;
+      width: 90%;
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .close-modal {
+      position: absolute;
+      top: 0.8rem;
+      right: 0.8rem;
+      background: white;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-image-container { width: 100%; height: 280px; overflow: hidden; background: #1e3a0c; flex-shrink: 0; }
+    #modalMainImage { width: 100%; height: 100%; object-fit: cover; }
+    .modal-body { padding: 1.2rem; overflow-y: auto; flex: 1; }
+    #modalTitle { font-size: 1.4rem; margin-bottom: 0.5rem; padding-right: 2rem; }
+    
+    .location-section { background: linear-gradient(135deg, #e9f5db, #d4e8c4); border-radius: 12px; padding: 1rem; margin-top: 0.5rem; margin-bottom: 1rem; }
+    .location-section h4 { color: #2d5016; margin-bottom: 0.5rem; font-size: 0.95rem; }
+    .location-tag { display: inline-block; background: white; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.7rem; margin: 0.2rem; color: #2d5016; }
+    .btn-map-view { background: #006994; color: white; border: none; padding: 0.5rem 1rem; border-radius: 30px; margin-top: 0.5rem; cursor: pointer; width: 100%; font-size: 0.85rem; }
+    .btn-map-view:hover { background: #004d66; }
+    
+    .video-tutorial { margin-top: 1rem; background: #1a1a2e; border-radius: 12px; overflow: hidden; }
+    .video-header { background: #2d5016; color: white; padding: 10px; display: flex; align-items: center; gap: 10px; }
+    .video-player { position: relative; padding-bottom: 56.25%; height: 0; }
+    .video-player iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+    
+    .instructions-section { margin-top: 1rem; background: #f9fbf5; border-radius: 12px; padding: 1rem; }
+    .instructions-section h4 { color: #2d5016; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 8px; }
+    .step-item { display: flex; gap: 12px; margin-bottom: 12px; padding: 8px; background: white; border-radius: 8px; border-left: 3px solid #2d5016; }
+    .step-number { background: #2d5016; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+    .step-text { flex: 1; color: #333; line-height: 1.4; }
+    
+    .gallery-section { margin-top: 1rem; }
+    .gallery-section h3 { font-size: 1rem; margin-bottom: 0.8rem; color: #2d5016; }
+    #photoGalleryThumbs { display: flex; gap: 10px; overflow-x: auto; padding: 8px 0 12px 0; margin-bottom: 1rem; }
+    .gallery-thumb { width: 80px; height: 70px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+    .gallery-thumb.active { border-color: #ffc107; }
+    
+    /* Fullscreen Image Viewer */
+    .fullscreen-viewer {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+    .fullscreen-viewer img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+    }
+    .fullscreen-viewer .close-fullscreen {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: white;
+      font-size: 40px;
+      cursor: pointer;
+      z-index: 10000;
+    }
+    .fullscreen-viewer .nav-prev, .fullscreen-viewer .nav-next {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: white;
+      font-size: 50px;
+      cursor: pointer;
+      padding: 20px;
+      z-index: 10000;
+    }
+    .fullscreen-viewer .nav-prev { left: 20px; }
+    .fullscreen-viewer .nav-next { right: 20px; }
+    .fullscreen-viewer .counter {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      background: rgba(0,0,0,0.6);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+    }
+    
+    .ratings-section { margin-top: 2rem; padding: 1.5rem; background: #f9fbf5; border-radius: 16px; border: 1px solid #e9f5db; }
+    .average-rating { text-align: center; padding: 1rem; background: linear-gradient(135deg, #2d5016, #1e3a0c); color: white; border-radius: 12px; margin-bottom: 1rem; }
+    .average-rating .big-rating { font-size: 2.5rem; font-weight: bold; }
+    .average-rating .stars-big { font-size: 1.2rem; letter-spacing: 4px; }
+    .btn-submit-review { background: #2d5016; color: white; border: none; padding: 0.8rem 1.5rem; border-radius: 30px; cursor: pointer; font-weight: bold; width: 100%; }
+    .btn-submit-review:hover { background: #1e3a0c; }
+    .reviews-list { max-height: 400px; overflow-y: auto; margin-top: 1rem; }
+    .review-item { background: white; padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid #2d5016; }
+    .review-header { display: flex; justify-content: space-between; margin-bottom: 0.5rem; flex-wrap: wrap; }
+    .reviewer-name { font-weight: bold; color: #2d5016; }
+    .review-rating { color: #ffc107; }
+    .review-date { font-size: 0.7rem; color: #999; }
+    .review-comment { color: #333; line-height: 1.4; margin-top: 0.5rem; }
+    
+    .official-info-card { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 0.6rem; margin: 0 0.5rem; border: 1px solid rgba(255,255,255,0.2); font-size: 0.6rem; flex-shrink: 0; }
+    
+    .admin-fab {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #2d5016;
+      color: white;
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 100;
+      border: none;
+      font-size: 1.3rem;
+    }
+    
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2d5016;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 25px;
+      z-index: 1200;
+      animation: fadeOut 3s forwards;
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; }
+      70% { opacity: 1; }
+      100% { opacity: 0; visibility: hidden; }
+    }
+    
+    .rating-stars { display: flex; gap: 8px; justify-content: center; margin: 1rem 0; }
+    .star { font-size: 2rem; cursor: pointer; color: #ddd; }
+    .star:hover, .star.active { color: #ffc107; }
+}
+.material-marker-icon {
+  border-radius: 50%;
+  border: 3px solid white;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  background: white;
+}
+    .seller-info-box { background: #fff3cd; border-radius: 12px; padding: 1rem; margin: 0.5rem 0 1rem; border-left: 4px solid #ffc107; }
+.seller-info-box h4 { color: #2d5016; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px; }
+.seller-info-box p { margin-bottom: 0.3rem; font-size: 0.9rem; }
+.craft-seller { font-size: 0.8rem; color: #666; margin-top: 3px; }
+.craft-description { font-size: 0.85rem; color: #555; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <button class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></button>
+
+  <div class="hero-banner">
+    <div class="hero-content">
+      <div class="hero-badge"><i class="fas fa-map-marker-alt"></i> Gigantes Island, Carles, Iloilo</div>
+      <h1>Discover Authentic Carlesanon Handicrafts</h1>
+      <p>Handwoven baskets · Buri hats · Shell crafts · Bamboo artisanal products</p>
+      <div class="hero-search">
+        <input type="text" placeholder="Search crafts (bamboo, pandan, shell, buri) or locations..." id="heroSearchInput">
+        <button onclick="window.handleSearch()"><i class="fas fa-search"></i> Search</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-wrapper">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h1><i class="fas fa-leaf"></i> SUGGEST:<br>Carles Handicrafts</h1>
+        <div class="subtitle">#BastaCarlesDaBest</div>
+        <div class="location-badge"><i class="fas fa-map-marker-alt"></i> Municipality of Carles, Iloilo</div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <button class="nav-tab active" id="tabMaterials"><i class="fas fa-seedling"></i> Materials</button>
+        <button class="nav-tab" id="tabCrafts"><i class="fas fa-hands"></i> Crafts</button>
+        <button class="nav-tab" id="tabMap"><i class="fas fa-map-marker-alt"></i> Geotagged Map</button>
+        <button class="nav-tab" id="tabReviews"><i class="fas fa-star"></i> Reviews</button>
+        <button class="nav-tab" id="tabAbout"><i class="fas fa-landmark"></i> About</button>
+
+        <div class="official-info-card" style="margin-top: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem;">
+            <i class="fas fa-landmark" style="font-size: 1.2rem;"></i>
+            <h3 style="margin: 0; font-size: 0.85rem;">Municipality of Carles</h3>
+          </div>
+          <div style="display: grid; gap: 0.4rem; font-size: 0.65rem;">
+            <div><i class="fas fa-map-pin"></i> Bancal Port, Carles, Iloilo, 5019</div>
+            <div><i class="fas fa-phone"></i> +63 945 799 3491</div>
+            <div><i class="fas fa-envelope"></i> lgucarlestourism@gmail.com</div>
+            <div><i class="fab fa-instagram"></i> @carlestourism</div>
+          </div>
+          <hr style="margin: 0.6rem 0; border-color: rgba(255,255,255,0.2);">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <a href="https://www.facebook.com/CarlesTourismOfficial" target="_blank" style="background:#1877f2; color:white; padding:4px 8px; border-radius:20px; text-decoration:none; font-size:0.65rem;"><i class="fab fa-facebook"></i> Official Page</a>
+            <a href="https://www.facebook.com/CarlesdaBestofficial" target="_blank" style="background:#e4405f; color:white; padding:4px 8px; border-radius:20px; text-decoration:none; font-size:0.65rem;"><i class="fab fa-facebook"></i> #CarlesdaBest</a>
+          </div>
+          <div style="text-align: center; margin-top: 0.6rem; font-size: 0.55rem; opacity: 0.8;">
+            <i class="fas fa-tag"></i> #CarlesdaBest #CarlesTourism
+          </div>
+        </div>
+      </nav>
+      
+      <div style="padding: 1rem; font-size: 0.65rem; opacity: 0.6; text-align: center; margin-top: auto;">
+        <i class="fas fa-check-circle"></i> Developed By: Maria Mecca Rose Baco, Kenny Rex Bolohabo, Stephanie Aco, John Kervin Marcelo
+      </div>
+    </aside>
+    
+    <main class="main-content">
+      <!-- Materials Section -->
+      <div id="materialsSection" class="content-section active">
+        <h2 style="margin-bottom: 1rem; color: #2d5016;"><i class="fas fa-box-open"></i> Local Materials of Carles</h2>
+        <div class="material-grid" id="materialGrid"></div>
+        <div id="materialDetail" style="display: none;">
+          <h3 style="color: #2d5016; margin: 1rem 0;"><i class="fas fa-hands-helping"></i> Traditional Crafts from this Material</h3>
+          <div class="craft-list" id="materialCrafts"></div>
+          <div class="suggestion-box" id="suggestionBox"></div>
+        </div>
+      </div>
+      
+            <!-- Crafts Section -->
+      <div id="craftsSection" class="content-section">
+        <div id="craftsSearchMessage" class="search-results-message" style="display: none;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h2 style="color:#2d5016;margin:0;"><i class="fas fa-folder-open"></i> <span id="craftsTitle">From Carles' local materials — handicrafts</span></h2>
+          <button onclick="showAllCrafts()" style="background:#2d5016;color:white;border:none;padding:6px 15px;border-radius:20px;cursor:pointer;font-size:0.8rem;display:none;" id="showAllBtn">Show All Crafts</button>
+        </div>
+        <div class="craft-list" id="allCrafts"></div>
+      </div>
+
+               <!-- Reviews Section -->
+      <div id="reviewsSection" class="content-section">
+        <div class="ratings-section">
+          <h3 style="color: #2d5016; text-align: center;"><i class="fas fa-star"></i> Rate & Review Handicrafts</h3>
+          
+          <!-- ⭐ THIS IS THE AVERAGE RATING DISPLAY -->
+          <div id="averageRatingDisplay" class="average-rating">
+            <div class="big-rating" id="avgRating">0.0</div>
+            <div class="stars-big" id="avgStars">☆☆☆☆☆</div>
+            <div id="totalReviews">0 reviews</div>
+          </div>
+          
+          <div style="background: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+            <h4><i class="fas fa-star"></i> Rate Our Handicrafts</h4>
+            <p>Your feedback helps improve Carles tourism! #CarlesdaBest</p>
+            <div class="rating-stars">
+              <i class="fas fa-star star" data-rating="1"></i>
+              <i class="fas fa-star star" data-rating="2"></i>
+              <i class="fas fa-star star" data-rating="3"></i>
+              <i class="fas fa-star star" data-rating="4"></i>
+              <i class="fas fa-star star" data-rating="5"></i>
+            </div>
+            <p id="reviewError" style="color:#dc3545;font-size:13px;display:none;margin:5px 0;"></p>
+            <input type="text" id="reviewerName" placeholder="Your name (optional)" style="width: 100%; padding: 0.8rem; margin: 0.5rem 0; border-radius: 40px; border: 1px solid #ddd;">
+            <textarea id="reviewComment" placeholder="Write your review here..." rows="4" style="width: 100%; padding: 0.8rem; margin: 0.5rem 0; border-radius: 20px; border: 1px solid #ddd;"></textarea>
+            <button class="btn-submit-review" onclick="submitReview()"><i class="fas fa-paper-plane"></i> Submit Review</button>
+          </div>
+          
+          <h4 style="margin-top: 1.5rem;"><i class="fas fa-comments"></i> Visitor Reviews</h4>
+          <div id="reviewsList" class="reviews-list"><p style="text-align:center; color:#999;">Loading reviews...</p></div>
+        </div>
+      </div>
+      
+      <!-- GEOTAGGED MAP SECTION -->
+      <div id="mapSection" class="content-section">
+        <h2 style="margin-bottom: 1rem; color: #2d5016;"><i class="fas fa-map"></i> Geotagged Material Sources in Carles, Iloilo</h2>
+        <div class="map-controls">
+          <button class="map-btn" id="zoomToCabilao"><i class="fas fa-location-dot"></i> Cabilao(Pandan)</button>
+          <button class="map-btn" id="zoomToCawayan"><i class="fas fa-location-dot"></i> Cawayan (Bamboo)</button>
+          <button class="map-btn" id="zoomToBancal"><i class="fas fa-location-dot"></i> Bancal (Buri)</button>
+          <button class="map-btn" id="zoomToGigantes"><i class="fas fa-island"></i> Gigantes (Shells)</button>
+          <button class="map-btn" id="resetMap"><i class="fas fa-globe"></i> Reset View</button>
+          <button class="map-btn map-layer-btn" id="toggleSatellite"><i class="fas fa-satellite"></i> Satellite</button>
+          <button class="map-btn map-layer-btn" id="toggleStreet"><i class="fas fa-map"></i> Street View</button>
+          <button class="map-btn" id="currentLocationBtn"><i class="fas fa-location-arrow"></i> My Location</button>
+        </div>
+        <div id="map"></div>
+        
+        <h3><i class="fas fa-location-dot"></i> Craftmakers Communities & Collection Sites</h3>
+        <div class="location-list" id="locationList"></div>
+        <p style="margin-top: 1rem; font-size: 0.75rem; color: #666; text-align: center;">
+          <i class="fas fa-info-circle"></i> Click on any location marker or list item to view details and crafts
+        </p>
+      </div>
+      
+<!-- About Section -->
+<div id="aboutSection" class="content-section">
+    <h2 style="color: #2d5016; margin-bottom: 1rem;"><i class="fas fa-landmark"></i> Cultural Heritage Documentation</h2>
+    
+    <!-- History of Carles with Background Image -->
+    <div style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('img/gigantes-bg.jpg'); background-size: cover; background-position: center; padding: 2rem; border-radius: 24px; margin-bottom: 1.5rem; color: white; position: relative; overflow: hidden; min-height: 300px;">
+        
+        <!-- Decorative overlay -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(45, 80, 22, 0.7); border-radius: 24px; z-index: 0;"></div>
+        
+        <div style="position: relative; z-index: 1;">
+            <h3 style="color: #ffc107;"><i class="fas fa-history"></i> About Carles, Iloilo</h3>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; margin-top: 1rem;">
+                <div style="flex: 2; min-width: 280px;">
+                    <p>Carles was founded on <strong style="color: #ffc107;">July 1, 1862</strong> and named after Spanish Governor <strong style="color: #ffc107;">Jose Maria Carles y Dominguez</strong>. The first settlers arrived around 1846, led by Francisco Ariola from Jolo, who cleared the area at Punta Bulakawe. As more settlers arrived from Antique and Aklan, the settlement was originally called <strong style="color: #ffc107;">"Badiang"</strong> due to the abundance of wild giant gabi plants in the area.</p>
+                    <p style="margin-top: 0.8rem;">In 1860, town leaders petitioned Governor Carles to become a municipality. On July 1, 1862, Badiang was officially renamed Carles in his honor. Though demoted to a barrio of Balasan in 1904, the Carles Separation Movement led by <strong style="color: #ffc107;">Casimiro Andrada</strong> successfully regained municipal status on <strong style="color: #ffc107;">January 1, 1920</strong>.</p>
+                </div>
+                
+                <!-- Image Card -->
+                <div style="flex: 1; min-width: 200px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 16px; padding: 1rem; border: 1px solid rgba(255,255,255,0.2); text-align: center;">
+                    <img src="img/gigantes-bg.jpg" alt="Islas de Gigantes" style="width: 100%; height: 150px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255,255,255,0.3);">
+                    <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #ddd;">
+                        <i class="fas fa-island"></i> Islas de Gigantes, Carles
+                    </p>
+                </div>
+            </div>
+            
+            <p style="margin-top: 0.8rem;">Today, Carles is known for its rich fishing grounds and popular tourist destinations like <strong style="color: #ffc107;">Islas de Gigantes, Sicogon Island, and Cabugao Gamay Island</strong>. The municipality relies on fishing, agriculture, and tourism, with local craftsmen creating traditional handicrafts from buri, bamboo, pandan leaves, and shells.</p>
+        </div>
+    </div>
+
+    <!-- For Carlesanon Artisans with Image Background -->
+    <h3><i class="fas fa-chalkboard-user"></i> For Carlesanon Artisans</h3>
+    <div style="background: linear-gradient(rgba(45, 80, 22, 0.85), rgba(45, 80, 22, 0.9)), url('img/pandan.jpg'); background-size: cover; background-position: center; color: white; padding: 2rem; border-radius: 24px; margin-top: 1rem; position: relative; overflow: hidden; min-height: 250px;">
+        
+        <!-- Decorative overlay pattern -->
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px); border-radius: 24px; z-index: 0;"></div>
+        
+        <div style="position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+            <div style="flex: 2; min-width: 280px;">
+                <p style="font-size: 1.1rem;"><i class="fas fa-lightbulb" style="color: #ffc107;"></i> <strong>This system helps you:</strong></p>
+                <ul style="margin-top: 0.8rem; margin-left: 1.5rem; list-style-type: none; padding: 0;">
+                    <li style="margin-bottom: 0.8rem; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 0.6rem 1rem; border-radius: 12px; backdrop-filter: blur(5px);">
+                        <span style="background: #ffc107; color: #2d5016; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</span>
+                        Learn what crafts you can make from local materials (buri, bamboo, pandan, shells)
+                    </li>
+                    <li style="margin-bottom: 0.8rem; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 0.6rem 1rem; border-radius: 12px; backdrop-filter: blur(5px);">
+                        <span style="background: #ffc107; color: #2d5016; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</span>
+                        Find where to source materials using the geotagged map
+                    </li>
+                    <li style="margin-bottom: 0.8rem; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 0.6rem 1rem; border-radius: 12px; backdrop-filter: blur(5px);">
+                        <span style="background: #ffc107; color: #2d5016; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</span>
+                        Preserve traditional craft knowledge for future generations
+                    </li>
+                    <li style="display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); padding: 0.6rem 1rem; border-radius: 12px; backdrop-filter: blur(5px);">
+                        <span style="background: #ffc107; color: #2d5016; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">4</span>
+                        Connect with tourists seeking authentic Carles products
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Decorative Image Cards -->
+            <div style="flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 1rem;">
+                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 16px; padding: 0.8rem; border: 1px solid rgba(255,255,255,0.2); text-align: center;">
+                    <img src="img/pandan.jpg" alt="Pandan Leaves" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2);">
+                    <p style="font-size: 0.7rem; margin-top: 0.3rem; opacity: 0.8;">🌿 Pandan Leaves</p>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 16px; padding: 0.8rem; border: 1px solid rgba(255,255,255,0.2); text-align: center;">
+                    <img src="img/shell.jpg" alt="Seashells" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2);">
+                    <p style="font-size: 0.7rem; margin-top: 0.3rem; opacity: 0.8;">🐚 Seashells</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats / Call to Action -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+        <div style="background: linear-gradient(135deg, #2d5016, #1e3a0c); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+            <i class="fas fa-map-marker-alt" style="font-size: 2rem; color: #ffc107;"></i>
+            <h3 style="margin-top: 0.5rem;">4+</h3>
+            <p style="font-size: 0.8rem; opacity: 0.8;">Local Materials</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #006994, #004d66); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+            <i class="fas fa-hands" style="font-size: 2rem; color: #ffc107;"></i>
+            <h3 style="margin-top: 0.5rem;">15+</h3>
+            <p style="font-size: 0.8rem; opacity: 0.8;">Traditional Crafts</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #b45309, #8b3d07); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+            <i class="fas fa-store" style="font-size: 2rem; color: #ffc107;"></i>
+            <h3 style="margin-top: 0.5rem;">6+</h3>
+            <p style="font-size: 0.8rem; opacity: 0.8;">Local Artisans</p>
+        </div>
+        <div style="background: linear-gradient(135deg, #c17a5e, #a3644a); color: white; padding: 1.5rem; border-radius: 16px; text-align: center;">
+            <i class="fas fa-star" style="font-size: 2rem; color: #ffc107;"></i>
+            <h3 style="margin-top: 0.5rem;">4.5★</h3>
+            <p style="font-size: 0.8rem; opacity: 0.8;">Average Rating</p>
+        </div>
+    </div>
+</div>
+  <!-- Craft Modal with Fullscreen Gallery -->
+  <div id="craftModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeCraftModal()">&times;</button>
+      <div class="modal-image-container"><img id="modalMainImage" src="" alt="Craft"></div>
+      <div class="modal-body">
+        <h2 id="modalTitle" style="color: #2d5016;"></h2>
+        <div id="modalDescription"></div>
+        
+        
+        <div class="location-section">
+          <h4><i class="fas fa-map-marker-alt"></i> Where to Find Materials for This Craft</h4>
+          <div id="materialLocations"></div>
+          <button id="viewOnMapBtn" class="btn-map-view" onclick="viewOnMap()"><i class="fas fa-map"></i> View Material Sources on Geotagged Map</button>
+        </div>
+        
+        <!-- ADD THIS NEW SECTION -->
+        <div class="seller-info-box" id="sellerInfoBox" style="display: none;">
+          <h4><i class="fas fa-store"></i> Crafted by</h4>
+          <div id="sellerDetails"></div>
+        </div>
+        
+        <div class="video-tutorial">
+          <div class="video-header">
+            <i class="fas fa-video"></i>
+            <span style="font-weight: bold;"> Video Tutorial</span>
+          </div>
+          <div class="video-player">
+            <iframe id="youtubeFrame" src="" allowfullscreen></iframe>
+          </div>
+        </div>
+        
+        <div class="instructions-section">
+          <h4><i class="fas fa-list-ol"></i> Step-by-Step Guide</h4>
+          <div id="stepInstructions"></div>
+        </div>
+        
+        <div class="gallery-section">
+          <h3><i class="fas fa-images"></i> Photo Gallery <span style="font-size: 12px;"></span></h3>
+          <div id="photoGalleryThumbs"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fullscreen Image Viewer -->
+  <div id="fullscreenViewer" class="fullscreen-viewer" onclick="closeFullscreen()">
+    <span class="close-fullscreen" onclick="closeFullscreen()">&times;</span>
+    <span class="nav-prev" onclick="event.stopPropagation(); prevImage()">&#10094;</span>
+    <span class="nav-next" onclick="event.stopPropagation(); nextImage()">&#10095;</span>
+    <img id="fullscreenImage" src="">
+    <div class="counter" id="imageCounter"></div>
+  </div>
+
+  <!-- Admin Login Modal -->
+  <div id="adminModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header" style="background: #2d5016; color: white; padding: 15px; display: flex; justify-content: space-between;">
+        <h3>Admin Login</h3>
+        <button onclick="closeAdminModal()" style="background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="adminUser" placeholder="admin@carles.gov.ph" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+        <input type="password" id="adminPass" placeholder="Password" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px; border:1px solid #ddd;">
+        <button onclick="adminLogin()" style="width:100%; padding:10px; background:#2d5016; color:white; border:none; border-radius:8px; cursor:pointer;">Login</button>
+        <p id="adminError" style="color:red; margin-top:10px;"></p>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="reportModal" class="modal">
+    <div class="modal-content" style="max-width:500px;margin:5% auto;">
+      <div style="background:#dc3545;color:white;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;border-radius:16px 16px 0 0;">
+        <h3 style="margin:0;"><i class="fas fa-flag"></i> Report Craft</h3>
+        <button onclick="closeReportModal()" style="background:none;border:none;color:white;font-size:1.8rem;cursor:pointer;">&times;</button>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <p id="reportCraftTitle" style="font-weight:bold;color:#2d5016;font-size:1.1rem;margin-bottom:15px;"></p>
+        <input type="hidden" id="reportCraftId">
+        
+        <label style="font-weight:bold;color:#2d5016;display:block;margin-bottom:5px;">Your Name</label>
+        <input type="text" id="reportReporterName" placeholder="Anonymous" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:15px;font-size:1rem;">
+        
+        <label style="font-weight:bold;color:#2d5016;display:block;margin-bottom:5px;">Email (optional)</label>
+        <input type="email" id="reportReporterEmail" placeholder="your@email.com" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:15px;font-size:1rem;">
+        
+        <label style="font-weight:bold;color:#2d5016;display:block;margin-bottom:5px;">Reason for Report *</label>
+        <select id="reportReason" style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:15px;font-size:1rem;">
+          <option value="">Select a reason...</option>
+          <option value="Inappropriate Content">Inappropriate Content</option>
+          <option value="Misleading Information">Misleading Information</option>
+          <option value="Copyright Issue">Copyright Issue</option>
+          <option value="Spam">Spam</option>
+          <option value="Scam/Fraud">Scam/Fraud</option>
+          <option value="Offensive Language">Offensive Language</option>
+          <option value="Other">Other</option>
+        </select>
+        
+        <label style="font-weight:bold;color:#2d5016;display:block;margin-bottom:5px;">Details (optional)</label>
+        <textarea id="reportDescription" rows="4" placeholder="Please provide more details..." style="width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;margin-bottom:15px;font-size:1rem;"></textarea>
+        
+        <button onclick="submitReport()" style="width:100%;padding:12px;background:#dc3545;color:white;border:none;border-radius:8px;font-weight:bold;font-size:1rem;cursor:pointer;">
+          <i class="fas fa-paper-plane"></i> Submit Report
+        </button>
+        <p id="reportError" style="color:#dc3545;margin-top:10px;display:none;"></p>
+      </div>
+    </div>
+  </div>
+  <!-- Confirmation Modal -->
+<div id="confirmModal" class="modal">
+    <div class="modal-content" style="max-width:400px;">
+        <div class="modal-header" style="background:#dc3545;color:white;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="margin:0;"><i class="fas fa-exclamation-triangle"></i> Confirm Action</h3>
+            <button onclick="closeConfirmModal()" style="background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p id="confirmMessage" style="font-size:1.1rem;margin-bottom:20px;"></p>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button onclick="closeConfirmModal()" style="padding:10px 20px;background:#6c757d;color:white;border:none;border-radius:8px;cursor:pointer;">Cancel</button>
+                <button id="confirmYesBtn" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;cursor:pointer;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+  <button class="admin-fab" onclick="openAdminModal()"><i class="fas fa-user-shield"></i></button>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const API_URL = 'http://localhost:5002/api';
+    let map = null;
+    let allMarkers = [];
+    let materialsData = [];
+    let craftsData = [];
+    let currentRating = 0;
+    let currentCraftMaterialId = null;
+    let currentTileLayer = null;
+    let currentGallery = [];
+    let currentGalleryIndex = 0;
+    
+    // ============ CRAFT INSTRUCTIONS AND VIDEOS ============
+    const craftInstructions = {
+        4: { 
+            steps: [
+                "Select mature bamboo poles from Cawayan forest",
+                "Cut bamboo poles to desired length for the boat frame",
+                "Split larger poles if needed for the hull",
+                "Arrange poles side by side to form the boat base",
+                "Secure poles together using abaca rope or rattan ties",
+                "Add outriggers on both sides for balance and stability",
+                "Attach a small motor mount at the rear if desired",
+                "Test the pump boat in shallow water before use"
+            ], 
+            videoUrl: "https://www.youtube.com/embed/Mfqt3pPqswU"
+        },
+        9: { 
+            steps: [
+                "Collect small decorative shells",
+                "Clean and polish shells thoroughly",
+                "Apply strong adhesive to flat magnet",
+                "Press shell onto magnet and hold for 30 seconds",
+                "Let dry for 24 hours",
+                "Add protective coating if desired",
+                "Test magnet strength before selling"
+            ], 
+            videoUrl: "https://www.youtube.com/embed/ng6INWYOx5U"
+        },
+        11: { 
+            steps: [
+                "Collect small decorative shells from Gigantes Island",
+                "Clean and polish shells thoroughly",
+                "Drill tiny holes in each shell",
+                "Thread onto nylon string or wire",
+                "Add beads in between shells for design",
+                "Secure with clasp at both ends",
+                "Test strength before wearing"
+            ], 
+            videoUrl: "https://www.youtube.com/embed/AhAgieKdtXo"
+        },
+        15: { 
+            steps: [
+                "Harvest mature buri leaves from Bancal area",
+                "Remove thorns and cut leaves into strips",
+                "Soak strips in water overnight to soften",
+                "Dry under the sun for 1-2 days until flexible",
+                "Weave using the traditional banig pattern",
+                "Fold edges and secure with fiber ties",
+                "Trim excess and your mat is ready"
+            ], 
+            videoUrl: "https://www.youtube.com/embed/6d38UOKcBiY"
+        },
+        16: { 
+            steps: [
+                "Select small polished shells of similar size",
+                "Drill tiny holes in each shell",
+                "Arrange shells in desired pattern",
+                "Thread onto nylon string or wire",
+                "Add beads in between shells for design",
+                "Secure with clasp at both ends",
+                "Test strength before wearing"
+            ], 
+            videoUrl: "https://www.youtube.com/embed/nUGiC6BwgG4"
+        },
+        17: { 
+            steps: [
+                "Collect clean shells from Gigantes Island shores",
+                "Wash shells thoroughly with soap and water",
+                "Drill small holes on each shell using fine drill bit",
+                "Arrange shells by size (largest at bottom)",
+                "Thread shells onto fishing line or abaca cord",
+                "Tie knots between each shell to secure spacing",
+                "Attach to a wooden ring or driftwood base"
+            ], 
+            videoUrl: "https://www.youtube.com/embed/RUIU6N18D44"
+        },
+        18: { 
+            steps: [
+                "Harvest mature pandan leaves from Cabilao area",
+                "Remove thorns and cut leaves into strips",
+                "Soak strips in saltwater for 2 hours to soften",
+                "Dry under the sun for 1-2 days until flexible",
+                "Weave using the traditional banig pattern",
+                "Fold edges and secure with fiber ties",
+                "Trim excess and your mat is ready"
+            ], 
+            videoUrl: "https://www.youtube.com/embed/SCU9SwNEe_s"
+        }
+    };
+    
+    // Material colors
+    const materialColors = {
+        1: { bg: '#2d5016', icon: '🌿', name: 'Pandan' },
+        2: { bg: '#006994', icon: '🐚', name: 'Shells' },
+        3: { bg: '#b45309', icon: '🌴', name: 'Buri' },
+        4: { bg: '#87a878', icon: '🎋', name: 'Bamboo' }
+    };
+    
+    // Map Layers
+    const satelliteLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps',
+        maxZoom: 20,
+        minZoom: 8
+    });
+    
+    const streetLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps',
+        maxZoom: 20,
+        minZoom: 8
+    });
+    
+    // ============ UTILITY FUNCTIONS ============
+    function escapeHtml(str) { 
+        if (!str) return ''; 
+        return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m])); 
+    }
+    
+    function showToast(msg) { 
+        const toast = document.createElement('div'); 
+        toast.className = 'toast'; 
+        toast.innerHTML = msg; 
+        document.body.appendChild(toast); 
+        setTimeout(() => toast.remove(), 3000); 
+    }
+    
+    // ============ LOAD MATERIALS ============
+    async function loadMaterials() {
+        try {
+            const res = await fetch(`${API_URL}/materials`);
+            if (!res.ok) throw new Error('Failed to load materials');
+            materialsData = await res.json();
+            renderMaterials();
+        } catch(e) { 
+            console.error('Load materials error:', e);
+            document.getElementById('materialGrid').innerHTML = '<div style="text-align:center; padding:40px; color:#999;">Error loading materials. Make sure the server is running.</div>';
+        }
+    }
+    
+    function renderMaterials() {
+        const grid = document.getElementById('materialGrid');
+        if (!materialsData.length) { 
+            grid.innerHTML = '<div style="text-align:center; padding:40px;">No materials found.</div>'; 
+            return; 
+        }
+        grid.innerHTML = materialsData.map(m => `
+            <div class="material-card" onclick="selectMaterial(${m.id}, this)">
+                <img src="${m.image_url || 'https://via.placeholder.com/200'}" class="material-image" onerror="this.src='https://via.placeholder.com/200'">
+                <div class="material-info">
+                    <div class="material-name">${escapeHtml(m.name)}</div>
+                    <div class="material-origin">📍 ${escapeHtml(m.origin || 'Carles, Iloilo')}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // ============ LOAD CRAFTS ============
+    async function loadCrafts() {
+        try {
+            const res = await fetch(`${API_URL}/crafts`);
+            if (!res.ok) throw new Error('Failed to load crafts');
+            craftsData = await res.json();
+            renderAllCrafts();
+        } catch(e) { 
+            console.error('Load crafts error:', e);
+        }
+    }
+    
+    function renderAllCrafts() {
+        const container = document.getElementById('allCrafts');
+        if (!craftsData.length) { 
+            container.innerHTML = '<div style="text-align:center; padding:40px;">No crafts found.</div>'; 
+            return; 
+        }
+        container.innerHTML = craftsData.map(c => buildCraftCard(c)).join('');
+    }
+    
+    function buildCraftCard(c) {
+        return `<div class="craft-item" onclick="openCraftModal(${c.id})" style="position:relative;cursor:pointer;">
+            <img src="${c.main_image || 'https://via.placeholder.com/130'}" class="craft-image" onerror="this.src='https://via.placeholder.com/130'">
+            <div class="craft-details">
+                <div class="craft-title">${escapeHtml(c.title)}</div>
+                <div class="craft-seller"><i class="fas fa-store"></i> ${escapeHtml(c.seller_name || 'Local Artisan')} | <i class="fas fa-map-marker-alt"></i> ${escapeHtml(c.seller_barangay || 'Carles')}</div>
+                <div class="craft-description">${escapeHtml((c.description || '').substring(0, 85))}</div>
+                <div class="cultural-tag"><i class="fas fa-leaf"></i> ${escapeHtml((c.cultural_note || 'Traditional craft').substring(0, 60))}</div>
+                <div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <span style="font-size:11px;color:#999;"><i class="fas fa-flag"></i> ${c.report_count || 0} reports</span>
+                    <button onclick="event.stopPropagation(); openReportModal(${c.id}, '${escapeHtml(c.title)}')" 
+                            style="background:#dc3545;color:white;border:none;padding:4px 14px;border-radius:20px;cursor:pointer;font-size:11px;font-weight:bold;">
+                        <i class="fas fa-flag"></i> Report
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    }
+    
+    // ============ SELECT MATERIAL ============
+    function selectMaterial(id, element) {
+        document.querySelectorAll('.material-card').forEach(c => c.classList.remove('selected'));
+        element.classList.add('selected');
+        const filtered = craftsData.filter(c => c.material_id === id);
+        document.getElementById('materialDetail').style.display = 'block';
+        document.getElementById('materialCrafts').innerHTML = filtered.map(c => buildCraftCard(c)).join('');
+        const material = materialsData.find(m => m.id === id);
+        const suggestions = craftsData.filter(c => c.material_id !== id).slice(0, 3);
+        const suggestionBox = document.getElementById('suggestionBox');
+        if (suggestions.length > 0 && material) {
+            suggestionBox.innerHTML = `<h3><i class="fas fa-lightbulb"></i> You might also like... (Based on your interest in ${material.name})</h3><div class="suggestion-items">${suggestions.map(s => `<div class="suggestion-chip" onclick="openCraftModal(${s.id})"><i class="fas fa-hand-peace"></i> ${escapeHtml(s.title)}</div>`).join('')}</div>`;
+        }
+        document.getElementById('materialDetail').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // ============ OPEN CRAFT MODAL ============
+    function openCraftModal(id) {
+        const craft = craftsData.find(c => c.id === id);
+        if (!craft) return;
+        currentCraftMaterialId = craft.material_id;
+        document.getElementById('modalMainImage').src = craft.main_image || 'https://via.placeholder.com/300';
+        document.getElementById('modalTitle').innerText = craft.title;
+        document.getElementById('modalDescription').innerHTML = `${craft.description || 'No description'}<br><br><strong>Cultural Heritage:</strong> ${craft.cultural_note || 'Traditional craft'}`;
+        
+        const sellerName = craft.seller_name;
+        const sellerContact = craft.seller_contact;
+        const sellerBarangay = craft.seller_barangay;
+        if (sellerName) {
+            const material = materialsData.find(m => m.id === craft.material_id);
+            document.getElementById('materialLocations').innerHTML = `<span class="location-tag"><i class="fas fa-map-pin"></i> ${material?.origin || 'Carles, Iloilo'}</span>`;
+            document.getElementById('sellerDetails').innerHTML = `<p><strong><i class="fas fa-user"></i> ${escapeHtml(sellerName)}</strong></p>${sellerContact ? `<p><i class="fas fa-phone"></i> ${escapeHtml(sellerContact)}</p>` : ''}<p><i class="fas fa-map-marker-alt"></i> ${escapeHtml(sellerBarangay || 'Carles, Iloilo')}</p>`;
+            document.getElementById('sellerInfoBox').style.display = 'block';
+        } else { 
+            document.getElementById('sellerInfoBox').style.display = 'none'; 
+        }
+        
+        const instructions = craftInstructions[id] || craftInstructions[craft.material_id] || craftInstructions[1];
+        if (instructions) {
+            document.getElementById('youtubeFrame').src = instructions.videoUrl;
+            document.getElementById('stepInstructions').innerHTML = instructions.steps.map((step, idx) => `<div class="step-item"><div class="step-number">${idx+1}</div><div class="step-text">${escapeHtml(step)}</div></div>`).join('');
+        }
+        
+        currentGallery = (craft.gallery_images && craft.gallery_images.length) ? craft.gallery_images : [craft.main_image];
+        let galleryHtml = '';
+        currentGallery.forEach((img, idx) => {
+            galleryHtml += `<img src="${img}" class="gallery-thumb ${idx === 0 ? 'active' : ''}" data-index="${idx}" onclick="openFullscreen(${idx})" style="cursor:pointer;">`;
+        });
+        document.getElementById('photoGalleryThumbs').innerHTML = galleryHtml;
+        
+        document.getElementById('craftModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // ============ FULLSCREEN FUNCTIONS ============
+    function openFullscreen(index) {
+        currentGalleryIndex = index;
+        document.getElementById('fullscreenImage').src = currentGallery[currentGalleryIndex];
+        document.getElementById('imageCounter').innerText = `${currentGalleryIndex + 1} / ${currentGallery.length}`;
+        document.getElementById('fullscreenViewer').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closeFullscreen() {
+        document.getElementById('fullscreenViewer').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+    
+    function prevImage() {
+        if (currentGalleryIndex > 0) { currentGalleryIndex--; }
+        else { currentGalleryIndex = currentGallery.length - 1; }
+        document.getElementById('fullscreenImage').src = currentGallery[currentGalleryIndex];
+        document.getElementById('imageCounter').innerText = `${currentGalleryIndex + 1} / ${currentGallery.length}`;
+    }
+    
+    function nextImage() {
+        if (currentGalleryIndex < currentGallery.length - 1) { currentGalleryIndex++; }
+        else { currentGalleryIndex = 0; }
+        document.getElementById('fullscreenImage').src = currentGallery[currentGalleryIndex];
+        document.getElementById('imageCounter').innerText = `${currentGalleryIndex + 1} / ${currentGallery.length}`;
+    }
+    
+    function closeCraftModal() { 
+        document.getElementById('craftModal').style.display = 'none'; 
+        document.body.style.overflow = ''; 
+        document.getElementById('youtubeFrame').src = '';
+    }
+    
+    // ============ VIEW ON MAP ============
+    function viewOnMap() {
+        closeCraftModal();
+        showSection('map');
+        setTimeout(() => {
+            if (map && currentCraftMaterialId) {
+                const locMap = { 1: [11.539417, 123.139444], 2: [11.634583, 123.344750], 3: [11.562083, 123.158417], 4: [11.526556, 123.107639] };
+                const loc = locMap[currentCraftMaterialId];
+                if (loc) { map.flyTo(loc, 15); L.popup().setLatLng(loc).setContent('<b>📍 Material Source Location</b>').openOn(map); }
+            }
+        }, 200);
+    }
+    
+    // ============ SHOW SECTION ============
+    function showSection(section) {
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        if (section === 'materials') {
+            document.getElementById('tabMaterials').classList.add('active');
+            document.getElementById('materialsSection').classList.add('active');
+        } else if (section === 'crafts') {
+            document.getElementById('tabCrafts').classList.add('active');
+            document.getElementById('craftsSection').classList.add('active');
+            renderAllCrafts();
+        } else if (section === 'map') {
+            document.getElementById('tabMap').classList.add('active');
+            document.getElementById('mapSection').classList.add('active');
+            setTimeout(() => map?.invalidateSize(), 100);
+        } else if (section === 'reviews') {
+            document.getElementById('tabReviews').classList.add('active');
+            document.getElementById('reviewsSection').classList.add('active');
+            loadReviews();
+        } else if (section === 'about') {
+            document.getElementById('tabAbout').classList.add('active');
+            document.getElementById('aboutSection').classList.add('active');
+        }
+        if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+    }
+    
+    // ============ LOAD REVIEWS ============
+    async function loadReviews() {
+        try {
+            console.log('📝 Loading reviews from:', `${API_URL}/reviews`);
+            
+            const res = await fetch(`${API_URL}/reviews`);
+            console.log('📝 Response status:', res.status);
+            
+            if (!res.ok) throw new Error('Failed to load reviews');
+            const data = await res.json();
+            console.log('📝 Reviews data:', data);
+            
+            // Safely get values
+            const avg = Number(data.stats?.average_rating) || 0;
+            const total = Number(data.stats?.total_reviews) || 0;
+            
+            console.log('📝 Avg:', avg, 'Total:', total);
+            
+            // Update average rating display
+            document.getElementById('avgRating').innerText = avg.toFixed(1);
+            document.getElementById('avgStars').innerHTML = '★'.repeat(Math.floor(avg)) + '☆'.repeat(5 - Math.floor(avg));
+            document.getElementById('totalReviews').innerText = `${total} reviews`;
+            
+            // Render reviews list
+            const reviewsList = document.getElementById('reviewsList');
+            if (data.reviews && data.reviews.length > 0) {
+                reviewsList.innerHTML = data.reviews.map(r => `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span class="reviewer-name"><i class="fas fa-user"></i> ${escapeHtml(r.reviewer_name)}</span>
+                            <span class="review-rating">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                            <span class="review-date">${new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div class="review-comment">"${escapeHtml(r.comment)}"</div>
+                        ${r.craft_title ? `<div style="font-size:11px;color:#999;margin-top:4px;">📌 ${escapeHtml(r.craft_title)}</div>` : ''}
+                    </div>
+                `).join('');
+            } else {
+                reviewsList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">No reviews yet. Be the first to review!</p>';
+            }
+        } catch(e) { 
+            console.error('❌ Load reviews error:', e);
+            document.getElementById('avgRating').innerText = '0.0';
+            document.getElementById('totalReviews').innerText = '0 reviews';
+            document.getElementById('reviewsList').innerHTML = '<p style="text-align:center;color:#999;padding:20px;">Error loading reviews. Please try again.</p>';
+        }
+    }
+    // ============ SUBMIT REVIEW ============
+    async function submitReview() {
+        const name = document.getElementById('reviewerName').value.trim();
+        const comment = document.getElementById('reviewComment').value.trim();
+        
+        if (!name) { 
+            alert('Please enter your name'); 
+            return; 
+        }
+        if (!comment) { 
+            alert('Please write your review'); 
+            return; 
+        }
+        if (currentRating === 0) { 
+            alert('Please select a rating by clicking on the stars'); 
+            return; 
+        }
+        
+        try {
+            const res = await fetch(`${API_URL}/reviews`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ 
+                    craft_id: null,
+                    reviewer_name: name, 
+                    rating: currentRating, 
+                    comment: comment 
+                }) 
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                alert('✅ Review submitted successfully! Thank you for your feedback!');
+                document.getElementById('reviewerName').value = '';
+                document.getElementById('reviewComment').value = '';
+                document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+                currentRating = 0;
+                loadReviews();
+            } else {
+                alert('❌ Error: ' + (data.error || 'Failed to submit review'));
+            }
+        } catch(e) { 
+            console.error('Submit error:', e);
+            alert('❌ Connection error. Make sure the server is running (node server.js)');
+        }
+    }
+    
+    // ============ STAR RATING ============
+    function initStarRating() {
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('click', function() {
+                currentRating = parseInt(this.dataset.rating);
+                document.querySelectorAll('.star').forEach((s, idx) => {
+                    if (idx < currentRating) s.classList.add('active');
+                    else s.classList.remove('active');
+                });
+            });
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.dataset.rating);
+                document.querySelectorAll('.star').forEach((s, idx) => {
+                    if (idx < rating) s.style.color = '#ffc107';
+                    else s.style.color = '#ddd';
+                });
+            });
+            star.addEventListener('mouseleave', function() {
+                document.querySelectorAll('.star').forEach((s, idx) => {
+                    if (idx < currentRating) s.style.color = '#ffc107';
+                    else s.style.color = '#ddd';
+                });
+            });
+        });
+    }
+    
+    // ============ MAP FUNCTION ============
+    function initMap() {
+        if (map) map.remove();
+        allMarkers = [];
+        
+        map = L.map('map', { zoomControl: true }).setView([11.58, 123.20], 12);
+        currentTileLayer = satelliteLayer;
+        satelliteLayer.addTo(map);
+        L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
+        
+        const locations = [
+            { lat: 11.539417, lng: 123.139444, name: 'Cabilao Pandan Area', materialId: 1, address: 'Cabilao Pequeno, Carles, Iloilo', image: 'img/pandan.jpg', desc: 'Primary source of pandan leaves used for weaving banig mats, baskets, and placemats.' },    
+            { lat: 11.562083, lng: 123.158417, name: 'Buri Palm Area', materialId: 3, address: 'Carles, Iloilo', image: 'img/buri.jpg', desc: 'Area where buri palm trees grow, used for crafting hats, bags, and traditional fans.' },
+            { lat: 11.526556, lng: 123.107639, name: 'Cawayan Bamboo Forest', materialId: 4, address: 'Cawayan, Carles, Iloilo', image: 'img/bamboo.jpg', desc: 'Bamboo forest area where poles are harvested for rafts, furniture, and construction.' },
+            { lat: 11.634583, lng: 123.344750, name: 'Gigantes Shell Area', materialId: 2, address: 'Gigantes Island, Carles, Iloilo', image: 'img/shell.jpg', desc: 'Rich marine area with abundant seashells used for wind chimes, necklaces, and decor.' }
+        ];
+        
+        locations.forEach((loc) => {
+            const customIcon = L.divIcon({
+                html: `<div style="position:relative;width:44px;height:56px;">
+                    <img src="${loc.image}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:3px solid white;box-shadow:0 3px 10px rgba(0,0,0,0.3);" onerror="this.src='https://via.placeholder.com/44'">
+                    <div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid white;"></div>
+                </div>`,
+                iconSize: [44, 60],
+                iconAnchor: [22, 58],
+                popupAnchor: [0, -58],
+                className: ''
+            });
+            
+            const popupContent = `
+                <div style="min-width:200px;">
+                    <div style="display:flex;gap:10px;margin-bottom:8px;">
+                        <img src="${loc.image}" style="width:45px;height:45px;border-radius:8px;object-fit:cover;" onerror="this.src='https://via.placeholder.com/45'">
+                        <div><h4 style="color:#2d5016;margin:0;">${loc.name}</h4></div>
+                    </div>
+                    <p style="font-size:11px;color:#555;margin:5px 0;">${loc.desc}</p>
+                    <p style="font-size:11px;color:#666;"><i class="fas fa-map-pin"></i> ${loc.address}</p>
+                    <div style="display:flex;gap:5px;margin-top:8px;">
+                        <button onclick="showCraftsByMaterial(${loc.materialId})" style="flex:1;background:#2d5016;color:white;border:none;padding:6px;border-radius:20px;cursor:pointer;font-size:11px;">🎨 View Crafts</button>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}" target="_blank" style="flex:1;text-align:center;background:#006994;color:white;padding:6px;border-radius:20px;text-decoration:none;font-size:11px;">🚗 Directions</a>
+                    </div>
+                </div>
+            `;
+            
+            const marker = L.marker([loc.lat, loc.lng], { icon: customIcon })
+                .bindPopup(popupContent, { maxWidth: 250 })
+                .addTo(map);
+            
+            allMarkers.push(marker);
+        });
+        
+        const locationList = document.getElementById('locationList');
+        locationList.innerHTML = locations.map((loc) => `
+            <div class="location-item" onclick="flyToLocation(${loc.lat},${loc.lng})">
+                <div class="location-name">
+                    <img src="${loc.image}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #2d5016;">
+                    ${loc.name}
+                </div>
+                <div class="location-address"><i class="fas fa-map-marker-alt"></i> ${loc.address}</div>
+                <div style="font-size:11px;color:#555;">${loc.desc.substring(0, 60)}...</div>
+            </div>
+        `).join('');
+    }
+    
+    // ============ FLY TO LOCATION ============
+    function flyToLocation(lat, lng) {
+        map.flyTo([lat, lng], 16);
+        setTimeout(() => {
+            allMarkers.forEach(marker => {
+                const ll = marker.getLatLng();
+                if (Math.abs(ll.lat - lat) < 0.005 && Math.abs(ll.lng - lng) < 0.005) {
+                    marker.openPopup();
+                }
+            });
+        }, 1200);
+    }
+    
+    // ============ SHOW CRAFTS BY MATERIAL ============
+    function showCraftsByMaterial(materialId) {
+        showSection('crafts');
+        const filtered = craftsData.filter(c => c.material_id === materialId);
+        document.getElementById('allCrafts').innerHTML = filtered.length ? filtered.map(c => buildCraftCard(c)).join('') : '<div style="text-align:center;padding:40px;">No crafts found.</div>';
+        document.getElementById('craftsTitle').innerText = ['','Pandan','Shells','Buri','Bamboo'][materialId] + ' Crafts';
+        document.getElementById('showAllBtn').style.display = 'block';
+    }
+    
+    // ============ TOGGLE MAP LAYERS ============
+    function toggleSatellite() {
+        if (currentTileLayer) map.removeLayer(currentTileLayer);
+        satelliteLayer.addTo(map);
+        currentTileLayer = satelliteLayer;
+        showToast('🗺️ Switched to Satellite View');
+    }
+    
+    function toggleStreet() {
+        if (currentTileLayer) map.removeLayer(currentTileLayer);
+        streetLayer.addTo(map);
+        currentTileLayer = streetLayer;
+        showToast('🗺️ Switched to Street View');
+    }
+    
+    // ============ SEARCH ============
+    window.handleSearch = function() {
+        const term = document.getElementById('heroSearchInput').value.toLowerCase();
+        const materialNames = {1: 'pandan', 2: 'shell', 3: 'buri', 4: 'bamboo'};
+        const filtered = craftsData.filter(c => 
+            c.title.toLowerCase().includes(term) || 
+            materialNames[c.material_id] === term
+        );
+        document.getElementById('allCrafts').innerHTML = filtered.length ? filtered.map(c => buildCraftCard(c)).join('') : '<div style="text-align:center;padding:40px;">No crafts found.</div>';
+        
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('tabCrafts').classList.add('active');
+        document.getElementById('craftsSection').classList.add('active');
+    };
+    
+    // ============ SHOW ALL CRAFTS ============
+    function showAllCrafts() {
+        renderAllCrafts();
+        document.getElementById('showAllBtn').style.display = 'none';
+        document.getElementById('craftsTitle').innerText = "From Carles' local materials — handicrafts";
+    }
+    
+    // ============ REPORT FUNCTIONS ============
+    function openReportModal(craftId, craftTitle) {
+        document.getElementById('reportCraftId').value = craftId;
+        document.getElementById('reportCraftTitle').textContent = `Reporting: "${craftTitle}"`;
+        document.getElementById('reportReporterName').value = '';
+        document.getElementById('reportReporterEmail').value = '';
+        document.getElementById('reportReason').value = '';
+        document.getElementById('reportDescription').value = '';
+        document.getElementById('reportError').style.display = 'none';
+        document.getElementById('reportModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeReportModal() {
+        document.getElementById('reportModal').style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    async function submitReport() {
+        const craftId = document.getElementById('reportCraftId').value;
+        const reporter_name = document.getElementById('reportReporterName').value.trim() || 'Anonymous';
+        const reporter_email = document.getElementById('reportReporterEmail').value.trim();
+        const reason = document.getElementById('reportReason').value;
+        const description = document.getElementById('reportDescription').value.trim();
+        const errorEl = document.getElementById('reportError');
+        
+        if (!reason) {
+            errorEl.textContent = 'Please select a reason for your report.';
+            errorEl.style.display = 'block';
+            return;
+        }
+        
+        try {
+            const res = await fetch(`${API_URL}/reports`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    craft_id: parseInt(craftId), 
+                    reporter_name, 
+                    reporter_email, 
+                    reason, 
+                    description 
+                })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                alert('✅ Report submitted successfully! Thank you for helping keep our community safe.');
+                closeReportModal();
+                loadCrafts();
+            } else {
+                errorEl.textContent = data.error || 'Failed to submit report.';
+                errorEl.style.display = 'block';
+            }
+        } catch (e) {
+            errorEl.textContent = 'Connection error. Please try again.';
+            errorEl.style.display = 'block';
+            console.error('Report error:', e);
+        }
+    }
+
+    // ============ CONFIRMATION DIALOG ============
+    let confirmCallback = null;
+
+    function showConfirm(message, callback) {
+        document.getElementById('confirmMessage').innerText = message;
+        document.getElementById('confirmModal').style.display = 'flex';
+        confirmCallback = callback;
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').style.display = 'none';
+        confirmCallback = null;
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const yesBtn = document.getElementById('confirmYesBtn');
+        if (yesBtn) {
+            yesBtn.addEventListener('click', function() {
+                if (confirmCallback) {
+                    confirmCallback();
+                }
+                closeConfirmModal();
+            });
+        }
+    });
+
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('confirmModal');
+        if (event.target === modal) {
+            closeConfirmModal();
+        }
+    });
+    
+    // ============ NAVIGATION ============
+    document.getElementById('tabMaterials').addEventListener('click', () => showSection('materials'));
+    document.getElementById('tabCrafts').addEventListener('click', () => showSection('crafts'));
+    document.getElementById('tabMap').addEventListener('click', () => showSection('map'));
+    document.getElementById('tabReviews').addEventListener('click', () => showSection('reviews'));
+    document.getElementById('tabAbout').addEventListener('click', () => showSection('about'));
+    document.getElementById('menuToggle').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('open'));
+    
+    // ============ ADMIN LOGIN ============
+    function openAdminModal() { document.getElementById('adminModal').style.display = 'flex'; }
+    function closeAdminModal() { document.getElementById('adminModal').style.display = 'none'; }
+    async function adminLogin() {
+        const username = document.getElementById('adminUser').value;
+        const password = document.getElementById('adminPass').value;
+        try {
+            const res = await fetch(`${API_URL}/admin/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+            const data = await res.json();
+            if (res.ok) { localStorage.setItem('adminToken', data.token); window.location.href = 'admin-dashboard.html'; } 
+            else { document.getElementById('adminError').innerText = data.error; }
+        } catch(e) { document.getElementById('adminError').innerText = 'Connection error'; }
+    }
+    
+    // ============ MAP EVENT LISTENERS ============
+    document.getElementById('zoomToCabilao')?.addEventListener('click', () => flyToLocation(11.539417, 123.139444));
+    document.getElementById('zoomToCawayan')?.addEventListener('click', () => flyToLocation(11.526556, 123.107639));
+    document.getElementById('zoomToBancal')?.addEventListener('click', () => flyToLocation(11.562083, 123.158417));
+    document.getElementById('zoomToGigantes')?.addEventListener('click', () => flyToLocation(11.634583, 123.344750));
+    document.getElementById('resetMap')?.addEventListener('click', () => map?.flyTo([11.58, 123.20], 11));
+    document.getElementById('toggleSatellite')?.addEventListener('click', toggleSatellite);
+    document.getElementById('toggleStreet')?.addEventListener('click', toggleStreet);
+    
+    // ============ INITIALIZE ============
+    loadMaterials(); 
+    loadCrafts(); 
+    loadReviews(); 
+    initMap(); 
+    initStarRating();
+</script>
+  </script>
+</body>
+</html>
+  </script>
+</body>
+</html>
