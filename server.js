@@ -12,12 +12,16 @@ app.use(express.json());
 
 // Database connection
 const db = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'carles_handicraft_system',
+    host: 'carles-handicraft-db-carlesmis.d.aivencloud.com',
+    user: 'avnadmin',
+    password: 'AVNS_I5p64fuZi6dx3nTUv9G',  // ← Must have your real password
+    database: 'defaultdb',
+    port: 10346,
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 10,
+    ssl: {
+        rejectUnauthorized: true
+    }
 });
 
 const promiseDb = db.promise();
